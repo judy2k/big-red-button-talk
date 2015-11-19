@@ -9,7 +9,7 @@ from subprocess import call
 import sys
 import time
 
-from hot import *
+import RPi.GPIO as gpio
 
 
 NUMBER_WORDS=["one", "two", "three", "four", "five", "six", "seven", "eight","nine", 
@@ -37,26 +37,51 @@ def time_text():
     elif (mins < 31):      
            hr = NUMBER_WORDS[hrs-1]
            mn = NUMBER_WORDS[mins-1]
-           msg = header + mn + " past " + hr + "."
+           msg = header + mn + "minutes past " + hr + "."
     else:
         hr = NUMBER_WORDS[hrs]
         mn =NUMBER_WORDS[(60 - mins-1)]
-        msg = header + mn + " to " + hr + "."
+        msg = header + mn + " minutes to " + hr + "."
     return msg
 
 
+class Responder(object):
+    def __init__(self):
+        self.tasks = chain([
+            lambda: speak(time_text()),
+            lambda: speak(time_text()),
+            lambda: speak("stop it"),
+            lambda: speak("that is really annoying"),
+            lambda: speak("I'm warning you"),
+            ],
+            repeat(lambda: speak("I hate you")) 
+        )
+        self.next_task = next(self.tasks)
+
+    def respond(self):
+        self.next_task()
+        self.next_task = next(self.tasks)
+
+
 def main(argv=sys.argv[1:]):
+    responder = Responder()
     try:
-        with setup():
-            while True:
-                if button_pressed():
-                    set_led(True)
-                    time.sleep(0.5)
-                    speak(time_text())
-                    set_led(False)
+        gpio.setmode(gpio.BCM)
+        gpio.setup(18, gpio.IN, pull_up_down=gpio.PUD_UP)
+        gpio.setup(23, gpio.OUT)
+        gpio.output(23, False)
+        while True:
+            input_state = gpio.input(18)
+            if input_state == False:
+                gpio.output(23, True)
                 time.sleep(0.2)
+                responder.respond()
+                gpio.output(23, False)
     except KeyboardInterrupt:
         pass
+    finally:
+        gpio.cleanup()
+
 
 if __name__ == '__main__':
     main()
