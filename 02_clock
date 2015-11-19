@@ -45,18 +45,14 @@ def time_text():
     return msg
 
 
-def main(argv=sys.argv[1:]):
-    try:
-        with setup():
-            while True:
-                if button_pressed():
-                    set_led(True)
-                    time.sleep(0.5)
-                    speak(time_text())
-                    set_led(False)
-                time.sleep(0.2)
-    except KeyboardInterrupt:
-        pass
-
-if __name__ == '__main__':
-    main()
+try:
+    with setup():
+        while True:
+            if button_pressed():
+                set_led(True)
+                time.sleep(0.5)
+                speak(time_text())
+                set_led(False)
+            time.sleep(0.2)
+except KeyboardInterrupt:
+    pass
